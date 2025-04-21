@@ -1,4 +1,4 @@
-to resolve SQLite readonly errors:
+# to resolve sqlite3.OperationalError: attempt to write a readonly database
 
 ```
 # Fix directory permissions (make sure it's fully owned by you)
