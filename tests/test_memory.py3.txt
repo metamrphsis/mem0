@@ -1,0 +1,165 @@
+import pytest
+import os
+import uuid
+import time
+from mem0 import Memory
+from mem0.configs.base import MemoryConfig
+from mem0.memory.setup import mem0_dir, get_user_id, setup_config
+
+@pytest.fixture
+def memory_store():
+    # Ensure config exists
+    setup_config()
+    
+    # Use the default mem0 directory structure
+    history_db_path = os.path.join(mem0_dir, "history.db")
+    qdrant_path = os.path.join(mem0_dir, "qdrant")
+    
+    # Ensure the directory structure exists
+    os.makedirs(qdrant_path, exist_ok=True)
+    
+    # Set proper permissions
+    os.chmod(mem0_dir, 0o700)  # rwx------
+    
+    # Configure Memory to use the main application database
+    config = MemoryConfig(
+        history_db_path=history_db_path,
+        vector_store={
+            "provider": "qdrant",
+            "config": {
+                "path": qdrant_path,
+                "collection_name": "mem0",  # Use the default collection name
+                "on_disk": True
+            }
+        }
+    )
+    
+    # Return memory instance with the application's database
+    return Memory(config=config)
+
+
+def test_add_memory(memory_store):
+    data = "Name is John Doe."
+    user_id = get_user_id()  # Use the real user ID
+    result = memory_store.add(data, user_id=user_id, infer=False)
+    memory_id = result["results"][0]["id"]
+    retrieved = memory_store.get(memory_id)
+    assert retrieved["memory"] == data
+
+
+def test_get_memory(memory_store):
+    data = "Name is John Doe."
+    user_id = get_user_id()
+    result = memory_store.add(data, user_id=user_id, infer=False)
+    memory_id = result["results"][0]["id"]
+    retrieved_data = memory_store.get(memory_id)
+    assert retrieved_data["memory"] == data
+
+
+def test_update_memory(memory_store):
+    data = "Name is John Doe."
+    user_id = get_user_id()
+    result = memory_store.add(data, user_id=user_id, infer=False)
+    memory_id = result["results"][0]["id"]
+    
+    new_data = "Name is John Kapoor."
+    memory_store.update(memory_id, new_data)
+    updated = memory_store.get(memory_id)
+    assert updated["memory"] == new_data
+
+
+def test_delete_memory(memory_store):
+    data = "Name is John Doe."
+    user_id = get_user_id()
+    result = memory_store.add(data, user_id=user_id, infer=False)
+    memory_id = result["results"][0]["id"]
+    
+    memory_store.delete(memory_id)
+    deleted = memory_store.get(memory_id)
+    assert deleted is None
+
+
+def test_history(memory_store):
+    data = "I like Indian food."
+    user_id = get_user_id()
+    result = memory_store.add(data, user_id=user_id, infer=False)
+    memory_id = result["results"][0]["id"]
+    
+    history = memory_store.history(memory_id)
+    assert len(history) == 1
+    # The correct key is "new_memory" not "content"
+    assert history[0]["new_memory"] == data
+    
+    new_data = "I like Italian food."
+    memory_store.update(memory_id, new_data)
+    history = memory_store.history(memory_id)
+    assert len(history) == 2
+    assert history[0]["new_memory"] == data
+    assert history[1]["old_memory"] == data
+    assert history[1]["new_memory"] == new_data
+    assert history[1]["event"] == "UPDATE"
+
+
+def test_get_all_memories(memory_store):
+    user_id = get_user_id()
+    data1 = f"Test data 1: {uuid.uuid4()}"  # Make each test run's data unique
+    data2 = f"Test data 2: {uuid.uuid4()}"
+    
+    # Add new test-specific data
+    result1 = memory_store.add(data1, user_id=user_id, infer=False)
+    result2 = memory_store.add(data2, user_id=user_id, infer=False)
+    
+    # Get newly added memory IDs
+    memory_id1 = result1["results"][0]["id"]
+    memory_id2 = result2["results"][0]["id"]
+    
+    # Retrieve all memories
+    memories = memory_store.get_all(user_id=user_id)
+    if isinstance(memories, dict) and "results" in memories:
+        memories = memories["results"]
+    
+    # Check that our new entries are in the results
+    memory_ids = [memory["id"] for memory in memories]
+    assert memory_id1 in memory_ids
+    assert memory_id2 in memory_ids
+
+
+def test_search_memories(memory_store):
+    user_id = get_user_id()
+    data1 = "I love playing tennis."
+    data2 = "Tennis is my favorite sport."
+    
+    # Use retry mechanism for vector operations that might encounter lock issues
+    def add_data1():
+        return memory_store.add(data1, user_id=user_id, infer=False)
+    def add_data2():
+        return memory_store.add(data2, user_id=user_id, infer=False)
+    
+    retry_operation(add_data1)
+    retry_operation(add_data2)
+    
+    # Use retry mechanism for search operation
+    def search_tennis():
+        return memory_store.search("tennis", user_id=user_id)
+    
+    results = retry_operation(search_tennis)
+    
+    # API v1.1 returns {"results": [...]} structure
+    if isinstance(results, dict) and "results" in results:
+        results = results["results"]
+    
+    assert len(results) > 0
+    found_memories = [result["memory"] for result in results]
+    assert any(memory in found_memories for memory in [data1, data2])
+
+
+# Add a retry mechanism for Qdrant operations that might encounter locks
+def retry_operation(func, max_retries=3, delay=1):
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except RuntimeError as e:
+            if "already accessed by another instance" in str(e) and attempt < max_retries - 1:
+                time.sleep(delay)
+                continue
+            raise
