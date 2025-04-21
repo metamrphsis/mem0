@@ -61,3 +61,7 @@ def memory_store():
         shutil.rmtree(test_dir)
     except Exception as e:
         print(f"Warning: Failed to clean up test directory {test_dir}: {e}")
+
+
+# to open DB Browser for SQLite
+open -a "DB Browser for SQLite" ~/.mem0/persistent_test_db/history.db

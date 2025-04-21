@@ -1,187 +1,9 @@
 # import pytest
 
-# from mem0 import Memory
-
-
-# @pytest.fixture
-# def memory_store():
-#     return Memory()
-# import pytest
-# import os
-# from mem0 import Memory
-# from mem0.configs.base import MemoryConfig
-
-# @pytest.fixture
-# def memory_store():
-#     # Get the .mem0 directory path (ensuring it exists with correct permissions)
-#     mem0_dir = os.path.expanduser("~/.mem0")
-#     os.makedirs(mem0_dir, exist_ok=True)
-    
-#     # Ensure test-specific subdirectory
-#     test_dir = os.path.join(mem0_dir, "test_data")
-#     os.makedirs(test_dir, exist_ok=True)
-    
-#     # Set proper permissions
-#     os.chmod(mem0_dir, 0o700)  # rwx------
-#     os.chmod(test_dir, 0o700)  # rwx------
-    
-#     # Create specific paths for databases
-#     history_db_path = os.path.join(test_dir, "history.db")
-    
-#     # Configure Memory with explicit paths
-#     config = MemoryConfig(
-#         history_db_path=history_db_path,
-#         vector_store={
-#             "provider": "qdrant",  # Keep using qdrant since that's what the code uses by default
-#             "config": {
-#                 "path": os.path.join(test_dir, "qdrant"),
-#                 "collection_name": "test_collection",
-#                 "on_disk": True
-#             }
-#         }
-#     )
-    
-#     # Return Memory instance with explicit configuration
-#     return Memory(config=config)
-
 import pytest
 import os
 import shutil
 import uuid
-from mem0 import Memory
-from mem0.configs.base import MemoryConfig
-
-# @pytest.fixture
-# def memory_store():
-#     # Create a unique test directory for each test
-#     test_id = str(uuid.uuid4())
-#     mem0_dir = os.path.expanduser("~/.mem0")
-#     test_dir = os.path.join(mem0_dir, f"test_data_{test_id}")
-    
-#     # Clean up any existing directory (if somehow it exists)
-#     if os.path.exists(test_dir):
-#         shutil.rmtree(test_dir)
-    
-#     # Create fresh directories
-#     os.makedirs(test_dir, exist_ok=True)
-    
-#     # Set proper permissions
-#     os.chmod(test_dir, 0o700)  # rwx------
-    
-#     # Create paths for databases
-#     history_db_path = os.path.join(test_dir, "history.db")
-#     qdrant_path = os.path.join(test_dir, "qdrant")
-#     os.makedirs(qdrant_path, exist_ok=True)
-    
-#     # Configure Memory
-#     config = MemoryConfig(
-#         history_db_path=history_db_path,
-#         vector_store={
-#             "provider": "qdrant",
-#             "config": {
-#                 "path": qdrant_path,
-#                 "collection_name": "test_collection",
-#                 "on_disk": True
-#             }
-#         }
-#     )
-    
-#     # Create memory instance
-#     memory = Memory(config=config)
-    
-#     # Return instance for test use
-#     yield memory
-    
-#     # Clean up after test
-#     # try:
-#     #     shutil.rmtree(test_dir)
-#     # except Exception as e:
-#     #     print(f"Warning: Failed to clean up test directory {test_dir}: {e}")
-
-
-# import pytest
-# import os
-# import shutil
-# import time
-# from mem0 import Memory
-# from mem0.configs.base import MemoryConfig
-
-# # Create a fixed test directory path - only one for all tests
-# TEST_DATA_DIR = os.path.expanduser("~/.mem0/pytest_data")
-
-# @pytest.fixture(scope="function")
-# def memory_store():
-#     # Create or clean the test directory
-#     if os.path.exists(TEST_DATA_DIR):
-#         try:
-#             # Try to remove existing directory
-#             shutil.rmtree(TEST_DATA_DIR)
-#             # Wait a moment for file locks to release
-#             time.sleep(0.1)
-#         except Exception as e:
-#             print(f"Warning: Failed to clean up previous test data: {e}")
-    
-#     # Create fresh directories
-#     os.makedirs(TEST_DATA_DIR, exist_ok=True)
-#     os.makedirs(os.path.join(TEST_DATA_DIR, "qdrant"), exist_ok=True)
-    
-#     # Set proper permissions
-#     os.chmod(TEST_DATA_DIR, 0o700)  # rwx------
-    
-#     # Create paths for databases
-#     history_db_path = os.path.join(TEST_DATA_DIR, "history.db")
-#     qdrant_path = os.path.join(TEST_DATA_DIR, "qdrant")
-    
-#     # Configure Memory
-#     config = MemoryConfig(
-#         history_db_path=history_db_path,
-#         vector_store={
-#             "provider": "qdrant",
-#             "config": {
-#                 "path": qdrant_path,
-#                 "collection_name": "test_collection",
-#                 "on_disk": True
-#             }
-#         }
-#     )
-    
-#     # Create memory instance
-#     memory = Memory(config=config)
-    
-#     # Return instance for test use
-#     yield memory
-    
-#     # Explicitly reset and cleanup connections
-#     try:
-#         # Close database connections
-#         if hasattr(memory, 'db') and hasattr(memory.db, 'connection'):
-#             memory.db.connection.close()
-            
-#         # Close vector store client if it has a close method
-#         if hasattr(memory.vector_store, 'client') and hasattr(memory.vector_store.client, 'close'):
-#             memory.vector_store.client.close()
-            
-#         # Allow a moment for connections to properly close
-#         time.sleep(0.1)
-#     except Exception as e:
-#         print(f"Warning: Error closing connections: {e}")
-
-# # Add a session-level fixture to do final cleanup after all tests
-# # @pytest.fixture(scope="session", autouse=True)
-# # def cleanup_after_all(request):
-# #     # This runs at the very end of the test session
-# #     def final_cleanup():
-# #         if os.path.exists(TEST_DATA_DIR):
-# #             try:
-# #                 shutil.rmtree(TEST_DATA_DIR)
-# #             except Exception as e:
-# #                 print(f"Warning: Failed to clean up final test data: {e}")
-    
-# #     request.addfinalizer(final_cleanup)
-
-
-import pytest
-import os
 from mem0 import Memory
 from mem0.configs.base import MemoryConfig
 
@@ -218,7 +40,6 @@ def memory_store():
     return Memory(config=config)
 
 
-# @pytest.mark.skip(reason="Not implemented")
 def test_add_memory(memory_store):
     data = "Name is John Doe."
     user_id = "test_user"
@@ -228,7 +49,6 @@ def test_add_memory(memory_store):
     assert retrieved["memory"] == data
 
 
-# @pytest.mark.skip(reason="Not implemented")
 def test_get_memory(memory_store):
     data = "Name is John Doe."
     user_id = "test_user"
@@ -238,7 +58,6 @@ def test_get_memory(memory_store):
     assert retrieved_data["memory"] == data
 
 
-# @pytest.mark.skip(reason="Not implemented")
 def test_update_memory(memory_store):
     data = "Name is John Doe."
     user_id = "test_user"
@@ -251,7 +70,6 @@ def test_update_memory(memory_store):
     assert updated["memory"] == new_data
 
 
-# @pytest.mark.skip(reason="Not implemented")
 def test_delete_memory(memory_store):
     data = "Name is John Doe."
     user_id = "test_user"
@@ -261,6 +79,7 @@ def test_delete_memory(memory_store):
     memory_store.delete(memory_id)
     deleted = memory_store.get(memory_id)
     assert deleted is None
+
 
 def test_history(memory_store):
     data = "I like Indian food."
@@ -282,25 +101,6 @@ def test_history(memory_store):
     assert history[1]["new_memory"] == new_data
     assert history[1]["event"] == "UPDATE"
 
-
-# @pytest.mark.skip(reason="Not implemented")
-# def test_get_all_memories(memory_store):
-#     user_id = "test_user"
-#     data1 = "Name is John Doe."
-#     data2 = "I like to code in Python."
-    
-#     memory_store.add(data1, user_id=user_id, infer=False)
-#     memory_store.add(data2, user_id=user_id, infer=False)
-    
-#     memories = memory_store.get_all(user_id=user_id)
-    
-#     # API v1.1 returns {"results": [...]} structure
-#     if isinstance(memories, dict) and "results" in memories:
-#         memories = memories["results"]
-    
-#     assert len(memories) == 2
-#     memories_content = [mem["memory"] for mem in memories]
-#     assert data1 in memories_content
 #     assert data2 in memories_content
 def test_get_all_memories(memory_store):
     user_id = "test_user"
@@ -326,7 +126,6 @@ def test_get_all_memories(memory_store):
     assert memory_id2 in memory_ids
 
 
-# @pytest.mark.skip(reason="Not implemented")
 def test_search_memories(memory_store):
     user_id = "test_user"
     data1 = "I love playing tennis."
@@ -344,3 +143,16 @@ def test_search_memories(memory_store):
     assert len(results) > 0
     found_memories = [result["memory"] for result in results]
     assert any(memory in found_memories for memory in [data1, data2])
+
+import time
+
+# Add a retry mechanism for Qdrant operations that might encounter locks
+def retry_operation(func, max_retries=3, delay=1):
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except RuntimeError as e:
+            if "already accessed by another instance" in str(e) and attempt < max_retries - 1:
+                time.sleep(delay)
+                continue
+            raise
