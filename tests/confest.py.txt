@@ -1,0 +1,43 @@
+import os
+import pytest
+import tempfile
+import shutil
+from mem0 import Memory
+from mem0.configs.base import MemoryConfig
+from mem0.configs.vector_stores.qdrant import QdrantConfig
+
+@pytest.fixture(scope="function")
+def memory_store():
+    # Create a temporary directory for all storage
+    temp_dir = tempfile.mkdtemp()
+    qdrant_path = os.path.join(temp_dir, "qdrant")
+    history_path = os.path.join(temp_dir, "history.db")
+    
+    # Create required directories
+    os.makedirs(qdrant_path, exist_ok=True)
+    
+    # Set proper permissions (rwx for owner)
+    os.chmod(temp_dir, 0o700)
+    os.chmod(qdrant_path, 0o700)
+    
+    # Create configuration
+    config = MemoryConfig(
+        vector_store={
+            "provider": "qdrant",
+            "config": {
+                "path": qdrant_path,
+                "collection_name": "test_collection",
+                "on_disk": True  # Ensure it's set to use disk storage
+            }
+        },
+        history_db_path=history_path
+    )
+    
+    # Create and return the Memory instance
+    memory_instance = Memory(config=config)
+    
+    # Yield the instance to be used in tests
+    yield memory_instance
+    
+    # Clean up after tests
+    shutil.rmtree(temp_dir)
